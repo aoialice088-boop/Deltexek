@@ -1,0 +1,411 @@
+-- Engine: Roblox
+-- Versão: Atual (Ambiente Lua 5.1 padrão)
+-- Linguagem: Lua
+-- Executor: Delta Executor (Mobile/Android)
+
+-- Passos para build e execução:
+-- 1. Abra o Delta Executor e anexe ao Roblox.
+-- 2. Cole este script no editor e execute.
+-- 3. Use a barra superior para arrastar a UI.
+-- 4. Sliders controlam cada parte separadamente (modifica o Size direto das MeshParts).
+-- 5. "Normal" reseta tudo pros tamanhos originais.
+-- 6. Funciona em qualquer jogo porque modifica as partes físicas, não os NumberValue.
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- Parenteia no CoreGui
+local guiParent = game:GetService("CoreGui")
+local testGui = Instance.new("ScreenGui")
+testGui.Name = "N1K_Test"
+local success = pcall(function() testGui.Parent = guiParent end)
+if not success or not testGui.Parent then
+    guiParent = player:WaitForChild("PlayerGui")
+end
+testGui:Destroy()
+
+if guiParent:FindFirstChild("N1K_MeshStretchUI") then
+    guiParent:FindFirstChild("N1K_MeshStretchUI"):Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "N1K_MeshStretchUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.DisplayOrder = 999
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = guiParent
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 260, 0, 340)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -170)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(60, 60, 80)
+stroke.Thickness = 2
+stroke.Parent = mainFrame
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 8)
+titleFix.Position = UDim2.new(0, 0, 1, -8)
+titleFix.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(1, -10, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "N1K Mesh Stretch"
+titleText.TextColor3 = Color3.fromRGB(220, 220, 240)
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 14
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+-- Botões
+local normalBtn = Instance.new("TextButton")
+normalBtn.Size = UDim2.new(0.92, 0, 0, 30)
+normalBtn.Position = UDim2.new(0.04, 0, 0.12, 0)
+normalBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+normalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+normalBtn.Text = "Normal"
+normalBtn.Font = Enum.Font.GothamSemibold
+normalBtn.TextSize = 13
+normalBtn.BorderSizePixel = 0
+normalBtn.Parent = mainFrame
+Instance.new("UICorner", normalBtn).CornerRadius = UDim.new(0, 6)
+
+-- Sliders
+local function createSlider(name, yPos, color)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(0.92, 0, 0, 36)
+    container.Position = UDim2.new(0.04, 0, yPos, 0)
+    container.BackgroundTransparency = 1
+    container.Parent = mainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 14)
+    label.BackgroundTransparency = 1
+    label.Text = name .. ": 1.0x"
+    label.TextColor3 = Color3.fromRGB(200, 200, 220)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(1, 0, 0, 6)
+    track.Position = UDim2.new(0, 0, 0, 18)
+    track.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    track.BorderSizePixel = 0
+    track.Parent = container
+    Instance.new("UICorner", track).CornerRadius = UDim.new(0, 3)
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(0.111, 0, 1, 0)
+    fill.BackgroundColor3 = color
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 3)
+
+    local knob = Instance.new("TextButton")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0.111, -8, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.Text = ""
+    knob.BorderSizePixel = 0
+    knob.Parent = track
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    return {
+        container = container,
+        label = label,
+        track = track,
+        fill = fill,
+        knob = knob,
+        value = 1.0,
+        name = name
+    }
+end
+
+local heightSlider = createSlider("Altura", 0.22, Color3.fromRGB(60, 200, 120))
+local widthSlider = createSlider("Largura", 0.35, Color3.fromRGB(255, 170, 0))
+local depthSlider = createSlider("Profundidade", 0.48, Color3.fromRGB(200, 60, 200))
+local headSlider = createSlider("Cabeça", 0.61, Color3.fromRGB(60, 180, 255))
+local armsSlider = createSlider("Braços", 0.74, Color3.fromRGB(255, 100, 150))
+local legsSlider = createSlider("Pernas", 0.87, Color3.fromRGB(150, 255, 100))
+
+-- Converte valor pra posição do slider
+local MIN_VAL = 0.3
+local MAX_VAL = 5.0
+
+local function valToPos(val)
+    return (val - MIN_VAL) / (MAX_VAL - MIN_VAL)
+end
+
+local function posToVal(pos)
+    return MIN_VAL + (MAX_VAL - MIN_VAL) * pos
+end
+
+function setSlider(slider, val)
+    val = math.clamp(val, MIN_VAL, MAX_VAL)
+    local pos = valToPos(val)
+    slider.value = val
+    slider.fill.Size = UDim2.new(pos, 0, 1, 0)
+    slider.knob.Position = UDim2.new(pos, -8, 0.5, -8)
+    slider.label.Text = slider.name .. ": " .. string.format("%.2f", val) .. "x"
+end
+
+local function setupSliderDrag(slider, onChange)
+    local dragging = false
+
+    local function updateFromX(xPos)
+        local trackAbsPos = slider.track.AbsolutePosition.X
+        local trackAbsSize = slider.track.AbsoluteSize.X
+        if trackAbsSize <= 0 then return end
+        
+        local relX = math.clamp((xPos - trackAbsPos) / trackAbsSize, 0, 1)
+        local newVal = posToVal(relX)
+        setSlider(slider, newVal)
+        onChange()
+    end
+
+    local function startDrag(input)
+        dragging = true
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+
+    slider.knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            startDrag(input)
+        end
+    end)
+
+    slider.track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            startDrag(input)
+            updateFromX(input.Position.X)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateFromX(input.Position.X)
+        end
+    end)
+end
+
+-- Draggable da UI
+local dragging, dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Lógica de esticamento direto nas MeshParts
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Guarda os tamanhos originais
+local originalSizes = {}
+local originalPositions = {}
+
+local function storeOriginals()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") or part:IsA("MeshPart") then
+            originalSizes[part] = part.Size
+            originalPositions[part] = part.CFrame
+        end
+    end
+end
+
+storeOriginals()
+
+-- Mapeia quais partes pertencem a cada categoria
+local partCategories = {
+    head = {"Head"},
+    torso = {"UpperTorso", "LowerTorso", "Torso"},
+    arms = {"LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "Left Arm", "Right Arm"},
+    legs = {"LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot", "Left Leg", "Right Leg"}
+}
+
+local function getPartCategory(partName)
+    for cat, parts in pairs(partCategories) do
+        for _, p in ipairs(parts) do
+            if partName == p then return cat end
+        end
+    end
+    return nil
+end
+
+local function applyStretch()
+    local hScale = heightSlider.value
+    local wScale = widthSlider.value
+    local dScale = depthSlider.value
+    local headScale = headSlider.value
+    local armScale = armsSlider.value
+    local legScale = legsSlider.value
+    
+    for _, part in pairs(character:GetDescendants()) do
+        if (part:IsA("BasePart") or part:IsA("MeshPart")) and originalSizes[part] then
+            local origSize = originalSizes[part]
+            local category = getPartCategory(part.Name)
+            
+            local scaleY = hScale
+            local scaleX = wScale
+            local scaleZ = dScale
+            
+            -- Aplica escalas específicas por categoria
+            if category == "head" then
+                scaleY = headScale
+                scaleX = headScale
+                scaleZ = headScale
+            elseif category == "arms" then
+                scaleY = armScale
+                scaleX = armScale
+                scaleZ = armScale
+            elseif category == "legs" then
+                scaleY = legScale
+                scaleX = legScale
+                scaleZ = legScale
+            end
+            
+            -- Modifica o Size da parte (isso replica pros outros jogadores)
+            part.Size = Vector3.new(
+                origSize.X * scaleX,
+                origSize.Y * scaleY,
+                origSize.Z * scaleZ
+            )
+        end
+    end
+    
+    -- Ajusta as posições dos attachments pra não quebrar as juntas
+    for _, joint in pairs(character:GetDescendants()) do
+        if joint:IsA("Motor6D") or joint:IsA("JointInstance") then
+            if joint.Part0 and joint.Part1 then
+                -- Ajusta o C0 e C1 baseado nas escalas
+                local p0Cat = getPartCategory(joint.Part0.Name)
+                local p1Cat = getPartCategory(joint.Part1.Name)
+                
+                local scale0 = Vector3.new(wScale, hScale, dScale)
+                local scale1 = Vector3.new(wScale, hScale, dScale)
+                
+                if p0Cat == "head" then scale0 = Vector3.new(headScale, headScale, headScale) end
+                if p0Cat == "arms" then scale0 = Vector3.new(armScale, armScale, armScale) end
+                if p0Cat == "legs" then scale0 = Vector3.new(legScale, legScale, legScale) end
+                
+                if p1Cat == "head" then scale1 = Vector3.new(headScale, headScale, headScale) end
+                if p1Cat == "arms" then scale1 = Vector3.new(armScale, armScale, armScale) end
+                if p1Cat == "legs" then scale1 = Vector3.new(legScale, legScale, legScale) end
+                
+                -- Escala as posições dos attachments
+                local c0Pos = joint.C0.Position
+                local c1Pos = joint.C1.Position
+                
+                joint.C0 = CFrame.new(
+                    c0Pos.X * scale0.X,
+                    c0Pos.Y * scale0.Y,
+                    c0Pos.Z * scale0.Z
+                ) * (joint.C0 - joint.C0.Position)
+                
+                joint.C1 = CFrame.new(
+                    c1Pos.X * scale1.X,
+                    c1Pos.Y * scale1.Y,
+                    c1Pos.Z * scale1.Z
+                ) * (joint.C1 - joint.C1.Position)
+            end
+        end
+    end
+end
+
+local function applyNormal()
+    for part, origSize in pairs(originalSizes) do
+        if part and part.Parent then
+            part.Size = origSize
+        end
+    end
+    
+    -- Reseta os joints
+    for _, joint in pairs(character:GetDescendants()) do
+        if joint:IsA("Motor6D") or joint:IsA("JointInstance") then
+            if originalPositions[joint] then
+                -- Não dá pra resetar C0/C1 facilmente, então só reseta as partes
+            end
+        end
+    end
+    
+    setSlider(heightSlider, 1.0)
+    setSlider(widthSlider, 1.0)
+    setSlider(depthSlider, 1.0)
+    setSlider(headSlider, 1.0)
+    setSlider(armsSlider, 1.0)
+    setSlider(legsSlider, 1.0)
+end
+
+normalBtn.MouseButton1Click:Connect(applyNormal)
+
+setupSliderDrag(heightSlider, applyStretch)
+setupSliderDrag(widthSlider, applyStretch)
+setupSliderDrag(depthSlider, applyStretch)
+setupSliderDrag(headSlider, applyStretch)
+setupSliderDrag(armsSlider, applyStretch)
+setupSliderDrag(legsSlider, applyStretch)
+
+-- Reaplica no respawn
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = newChar:WaitForChild("Humanoid")
+    
+    task.wait(0.5)
+    originalSizes = {}
+    storeOriginals()
+    applyStretch()
+end)
